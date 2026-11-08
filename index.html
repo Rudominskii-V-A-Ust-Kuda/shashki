@@ -1443,24 +1443,6 @@ function draw(){
 
 /* ФОН МЕНЮ (простой) */
 function drawMenuBG(t){
-  const b=BIOMES[0];
-  const sky=ctx.createLinearGradient(0,0,0,H);
-  sky.addColorStop(0,b.sky1); sky.addColorStop(1,b.sky2);
-  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
-  // силуэты деревьев
-  for(let i=0;i<20;i++){
-    const x=(i*W/20+30)%W, y=H*0.6+Math.sin(i*1.7)*40;
-    const s=0.7+Math.sin(i)*0.3;
-    ctx.fillStyle='#0d2a0d';
-    ctx.fillRect(x-2*s,y-6*s,4*s,16*s);
-    for(let j=0;j<3;j++){
-      ctx.fillStyle=j%2?'#1a5a1f':'#0d3a12';
-      const cx=x+Math.sin(t*1.1+i)*3, cy=y-j*14*s;
-      ctx.beginPath();
-      ctx.moveTo(cx-26*s,c y=cy); // placeholder
-      ctx.closePath();
-    }
-  }
   // упрощённо — просто холмы
   ctx.fillStyle='#0d3a12';
   ctx.beginPath(); ctx.moveTo(0,H);
