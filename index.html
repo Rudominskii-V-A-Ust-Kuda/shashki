@@ -3,763 +3,736 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Шашки: Легенды Пяти Миров (Card Edition)</title>
+<title>Checkers Royale: 2026</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{height:100%;overflow:hidden;background:#0a0f18;font-family:'Trebuchet MS',system-ui,sans-serif}
-#cv{position:fixed;inset:0;display:block}
-#hud{position:fixed;top:0;left:0;right:0;padding:8px 12px;display:flex;justify-content:space-between;color:#fff;pointer-events:none;text-shadow:0 2px 8px #000;font-weight:bold;font-size:14px;z-index:5}
-#hud .row1{font-size:16px;color:#ffd166}
-#hud .row2{font-size:11px;opacity:.9;margin-top:2px;color:#ddd}
-#hud .right{text-align:right}
-#hud .hpbar{width:120px;height:8px;background:#000a;border-radius:4px;margin-top:4px;margin-left:auto;overflow:hidden;border:1px solid #555}
-#hud .hpbar div{height:100%;background:linear-gradient(90deg,#ff3b3b,#ffaa33);transition:width .2s}
+    :root {
+        --bg: #0a0f18; --panel: rgba(20, 30, 50, 0.7);
+        --gold: #ffd166; --purple: #b12dff; --blue: #4dabf7; --red: #ff3b3b;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    body { background: var(--bg); overflow: hidden; height: 100vh; width: 100vw; display: flex; flex-direction: column; }
+    canvas { position: absolute; inset: 0; display: block; }
+    
+    /* UI Overlay */
+    #ui { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+    
+    /* Top HUD */
+    .top-hud { display: flex; justify-content: space-between; padding: 15px; pointer-events: none; }
+    .enemy-info, .player-info { background: var(--panel); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 12px; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .enemy-info h3, .player-info h3 { font-size: 14px; color: var(--gold); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+    .hp-bar { width: 120px; height: 8px; background: #000; border-radius: 4px; overflow: hidden; margin-top: 5px; border: 1px solid #333; }
+    .hp-fill { height: 100%; background: linear-gradient(90deg, var(--red), #ff8855); width: 100%; transition: width 0.3s; }
 
-#bottom-ui{position:fixed;left:0;right:0;bottom:0;padding:8px 8px calc(8px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;z-index:6;background:linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0))}
-#elixir-bar{width:90%;max-width:400px;height:16px;background:#111;border-radius:8px;border:2px solid #555;margin-bottom:8px;position:relative;overflow:hidden}
-#elixir-fill{height:100%;background:linear-gradient(90deg,#b12dff,#ff2d95);width:50%;transition:width .3s}
-#elixir-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;color:#fff;text-shadow:0 1px 2px #000}
+    /* Bottom UI */
+    .bottom-hud { padding: 10px 15px 25px; display: flex; flex-direction: column; align-items: center; pointer-events: auto; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
+    
+    /* Elixir Bar */
+    .elixir-container { width: 100%; max-width: 400px; margin-bottom: 15px; position: relative; }
+    .elixir-bg { width: 100%; height: 20px; background: #111; border-radius: 10px; border: 2px solid #444; overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.8); }
+    .elixir-fill { height: 100%; background: linear-gradient(90deg, #ff00cc, #333399); width: 50%; transition: width 0.1s linear; box-shadow: 0 0 10px #ff00cc; }
+    .elixir-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 14px; text-shadow: 0 1px 2px #000; }
 
-#hand{display:flex;gap:6px;justify-content:center;width:100%;max-width:400px}
-.card{width:70px;height:90px;background:linear-gradient(180deg,#3a4a6a,#1a2a4a);border-radius:8px;border:2px solid #a8c0e0;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;box-shadow:0 4px 6px #000a;transition:transform .1s;cursor:grab}
-.card:active{cursor:grabbing}
-.card.disabled{filter:grayscale(1) brightness(0.5);pointer-events:none}
-.card .cost{position:absolute;top:-4px;left:-4px;width:22px;height:22px;background:radial-gradient(circle,#ff5ce6,#b12dff);border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;color:#fff;box-shadow:0 2px 4px #000a}
-.card .icon{font-size:36px;line-height:1}
-.card .name{font-size:9px;text-align:center;font-weight:bold;color:#fff;margin-top:4px;line-height:1.1}
+    /* Cards */
+    .cards { display: flex; gap: 8px; justify-content: center; width: 100%; max-width: 400px; }
+    .card { width: 75px; height: 95px; background: linear-gradient(180deg, #2a3a5a, #1a2a4a); border-radius: 10px; border: 2px solid rgba(255,255,255,0.2); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.6); transition: transform 0.1s, filter 0.2s; cursor: grab; touch-action: none; }
+    .card:active { cursor: grabbing; transform: scale(0.95); }
+    .card.disabled { filter: grayscale(1) brightness(0.5); pointer-events: none; }
+    .card .cost { position: absolute; top: -5px; left: -5px; width: 24px; height: 24px; background: radial-gradient(circle, #ff5ce6, #b12dff); border-radius: 50%; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+    .card .icon { font-size: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+    .card .name { font-size: 10px; color: #ccc; margin-top: 5px; text-transform: uppercase; font-weight: bold; }
 
-#action-btns{display:flex;gap:6px;margin-top:6px;width:100%;max-width:400px;justify-content:center}
-#action-btns button{flex:1;font-family:inherit;border:none;border-radius:8px;padding:8px 4px;font-size:11px;font-weight:bold;color:#201000;background:linear-gradient(#fff0a8,#f0a929);box-shadow:0 3px 0 #7a4a00;transition:transform .06s}
-#action-btns button:active{transform:translateY(2px);box-shadow:0 1px 0 #7a4a00}
-#action-btns button:disabled{filter:grayscale(.8) brightness(.6);box-shadow:0 3px 0 #444}
-#action-btns button.on{background:linear-gradient(#ffe98a,#ff6b1f);box-shadow:0 0 0 2px #fff,0 0 12px #ffb347}
-
-#overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(circle at 50% 30%,#000a,#000d 70%);color:#fff;text-align:center;padding:22px;z-index:10}
-#overlay.show{display:flex}
-#overlay h1{font-size:24px;color:#ffd166;text-shadow:0 3px 0 #000}
-#overlay p{opacity:.9;font-size:13px;max-width:340px;line-height:1.5}
-#overlay button{font-family:inherit;border:none;border-radius:14px;padding:12px 24px;font-size:16px;font-weight:bold;color:#201000;background:linear-gradient(#ffe08a,#f0b429);box-shadow:0 4px 0 #a86f00}
+    /* Overlays */
+    #menu { position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; opacity: 1; transition: opacity 0.5s; }
+    #menu.hidden { opacity: 0; pointer-events: none; }
+    #menu h1 { color: #fff; font-size: 36px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 20px var(--gold); margin-bottom: 10px; }
+    #menu p { color: #aaa; margin-bottom: 40px; text-align: center; max-width: 300px; line-height: 1.5; }
+    .btn { padding: 15px 40px; margin: 10px; border: none; border-radius: 30px; font-size: 18px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; width: 250px; color: #fff; }
+    .btn:active { transform: scale(0.95); }
+    .btn-friendly { background: linear-gradient(45deg, #4dabf7, #3b5bdb); box-shadow: 0 5px 15px rgba(77, 171, 247, 0.4); }
+    .btn-ranked { background: linear-gradient(45deg, #ff3b3b, #c81a00); box-shadow: 0 5px 15px rgba(255, 59, 59, 0.4); }
+    
+    /* Drag Proxy */
+    #drag-proxy { position: absolute; width: 60px; height: 60px; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 30px; pointer-events: none; z-index: 50; transform: translate(-50%, -50%); background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); border: 2px solid #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
 </style>
 </head>
 <body>
-<canvas id="cv"></canvas>
-<div id="hud">
-  <div class="left">
-    <div class="row1" id="hTitle">—</div>
-    <div class="row2" id="hSub">—</div>
-  </div>
-  <div class="right">
-    <div class="row1" id="hTurn">—</div>
-    <div class="row2" id="hBoss"></div>
-    <div class="hpbar" id="hBossBar" style="display:none"><div style="width:100%"></div></div>
-  </div>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="ui">
+    <div class="top-hud">
+        <div class="enemy-info">
+            <h3 id="enemyName">Enemy AI</h3>
+            <div>Эликсир: <span id="enemyElixir">0</span></div>
+            <div class="hp-bar"><div class="hp-fill" id="enemyHp"></div></div>
+        </div>
+        <div class="player-info">
+            <h3>Вы</h3>
+            <div>Рейтинг: <span id="rankText">0</span></div>
+            <div class="hp-bar"><div class="hp-fill" id="playerHp" style="background: linear-gradient(90deg, #4dabf7, #15aabf)"></div></div>
+        </div>
+    </div>
+
+    <div class="bottom-hud">
+        <div class="elixir-container">
+            <div class="elixir-bg"><div class="elixir-fill" id="elixirFill"></div></div>
+            <div class="elixir-text" id="elixirText">5 / 10</div>
+        </div>
+        <div class="cards" id="handContainer"></div>
+    </div>
 </div>
 
-<div id="bottom-ui">
-  <div id="elixir-bar"><div id="elixir-fill"></div><div id="elixir-text">0 / 10</div></div>
-  <div id="hand"></div>
-  <div id="action-btns">
-    <button id="bBomb">💣 Бомба</button>
-    <button id="bSkip">⌛ Пропуск</button>
-  </div>
+<div id="drag-proxy">🛡️</div>
+
+<div id="menu">
+    <h1>Checkers Royale</h1>
+    <p>Слияние классических шашек и карточной стратегии. Используй эликсир, вытягивай карты на доску и уничтожь башню врага!</p>
+    <button class="btn btn-friendly" onclick="startGame('friendly')">Дружеский матч</button>
+    <button class="btn btn-ranked" onclick="startGame('ranked')">Рейтинговый матч</button>
 </div>
 
-<div id="overlay"></div>
 <script>
 'use strict';
-var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), TAU=Math.PI*2;
-var N=8, W=0, H=0, DPR=1, CS=40, BX=0, BY=0, BOARD=320;
-function $(id){return document.getElementById(id);}
 
-/* ================== КАРТЫ ================== */
-var CARDS = [
-  { id:'knight', name:'Рыцарь', cost:2, icon:'🛡️', color:'#c0c0c0', type:'tank', hp:3 },
-  { id:'bomber', name:'Бомбист', cost:3, icon:'💣', color:'#ff6b6b', type:'bomber', hp:1 },
-  { id:'sniper', name:'Снайпер', cost:4, icon:'🎯', color:'#4dabf7', type:'sniper', hp:1 },
-  { id:'mage', name:'Маг', cost:4, icon:'🔮', color:'#b197fc', type:'mage', hp:2 },
-  { id:'assassin', name:'Ассасин', cost:3, icon:'🗡️', color:'#20c997', type:'assassin', hp:2 },
-  { id:'king', name:'Король', cost:5, icon:'👑', color:'#ffd43b', type:'king', hp:4 }
-];
+// ==========================================
+// 1. КОНСТАНТЫ И КОНФИГУРАЦИЯ
+// ==========================================
+const CFG = {
+    maxElixir: 10,
+    elixirRegenTime: 1.5, // секунд на 1 единицу
+    gridSize: 8,
+    cardNames: { knight: 'Рыцарь', bomber: 'Бомбист', sniper: 'Снайпер', mage: 'Маг' }
+};
 
-var CFG = { maxElixir: 10, startElixir: 5, regen: 2 };
+const CARDS = {
+    knight: { cost: 3, icon: '🛡️', color: '#a8c0e0', hp: 3, dmg: 1, type: 'melee' },
+    bomber: { cost: 4, icon: '💣', color: '#ff6b6b', hp: 1, dmg: 3, type: 'ranged', aoe: true },
+    sniper: { cost: 5, icon: '🎯', color: '#4dabf7', hp: 1, dmg: 4, type: 'ranged' },
+    mage:   { cost: 4, icon: '🔮', color: '#b197fc', hp: 2, dmg: 2, type: 'ranged' }
+};
 
-var BIOMES = [
-  {name:'Изумрудный лес', bossName:'Древень', bossType:'treant', sky1:'#4a8cff', ground1:'#5ea84a', ground2:'#2f6e2a', tileA:'#7ec56a', tileB:'#4e9e4e', water:'#1a6a9a'},
-  {name:'Пустыня Скелетов', bossName:'Костяной Король', bossType:'skeleton', sky1:'#ffcf7a', ground1:'#d9a55a', ground2:'#8a5a2a', tileA:'#e9b44c', tileB:'#b07d2b', water:'#2a8ac0'},
-  {name:'Ледяные Пики', bossName:'Фрост-Гигант', bossType:'frost', sky1:'#b8d8ff', ground1:'#a8d0f0', ground2:'#3a6a9a', tileA:'#c8e8ff', tileB:'#7ab8e8', water:'#4a7ec8'},
-  {name:'Морское Дно', bossName:'Кракен', bossType:'kraken', sky1:'#1a6a9a', ground1:'#2a7aa0', ground2:'#0d3a5a', tileA:'#3a8ab0', tileB:'#1a5a80', water:'#000a1a'},
-  {name:'Лавовый Ад', bossName:'Люцифер', bossType:'lucifer', sky1:'#ff6b1f', ground1:'#5a2a1a', ground2:'#1a0808', tileA:'#6a3a2a', tileB:'#2a0a05', water:'#ff3b1f'}
-];
+const BIOME = {
+    sky1: '#0f172a', sky2: '#1e293b',
+    ground1: '#334155', ground2: '#0f172a',
+    tileA: '#475569', tileB: '#1e293b',
+    glow: '#38bdf8'
+};
 
-var BOSS_HP = [10, 15, 20, 25, 30];
-var G = null;
-var hand = [], elixir = 0, dragCard = null, dragX = 0, dragY = 0;
-var particles = [], projectiles = [], floaters = [], glow = [];
+// ==========================================
+// 2. ЯДРО (Canvas, Math, Utilities)
+// ==========================================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, CS, BX, BY, BOARD;
 
-function cellXY(r,c){ return {x:BX+c*CS+CS/2, y:BY+r*CS+CS/2}; }
-function inb(r,c){ return r>=0 && r<N && c>=0 && c<N; }
-
-function layout(){
-  var m = Math.min(W*0.92, H*0.50);
-  CS = Math.floor(m/N); BOARD = CS*N;
-  BX = Math.round((W-BOARD)/2);
-  BY = Math.round(H*0.12);
-}
-function resize(){
-  DPR = Math.min(2, window.devicePixelRatio||1);
-  W = innerWidth; H = innerHeight;
-  cv.width = W*DPR; cv.height = H*DPR;
-  cv.style.width = W+'px'; cv.style.height = H+'px';
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-  layout();
-}
-addEventListener('resize', resize);
-
-/* ================== ЛОГИКА УРОВНЕЙ ================== */
-function levelInfo(lvl){
-  var league = Math.floor((lvl-1)/5);
-  var inL = ((lvl-1)%5)+1;
-  return {
-    league: league, inL: inL, biome: BIOMES[league],
-    isBoss: inL===5, enemies: Math.min(8, 2+lvl), elites: lvl>=8?2:(lvl>=5?1:0)
-  };
-}
-
-function startLevel(lvl){
-  var info = levelInfo(lvl);
-  G = {
-    lvl: lvl, info: info, biome: info.biome,
-    board: Array.from({length:N}, ()=>Array(N).fill(null)),
-    boss: null, sel: null, moves: [], mergeTargets: [],
-    turn: 'player', busy: false, over: false, time: 0,
-    bombCd: 0, mode: null, trees: [], waterAnim: 0
-  };
-  elixir = CFG.startElixir;
-  updateElixirUI();
-  drawHand();
-  
-  // Фон (генерация деревьев)
-  G.trees = [];
-  for(var i=0;i<30;i++) G.trees.push({x:Math.random()*W, y:Math.random()*H*0.4, s:0.5+Math.random()});
-
-  // Расстановка врагов
-  var cells = [];
-  for(var r=0;r<N;r++) for(var c=0;c<N;c++) if((r+c)%2===1) cells.push([r,c]);
-  
-  var left = info.enemies, elites = info.elites;
-  var ecells = cells.filter(function(x){return x[0]<=2;}).sort(function(){return Math.random()-0.5;});
-  for(var k=0;k<ecells.length;k++){
-    if(left<=0) break;
-    var lv = elites>0?2:1; if(elites>0) elites--;
-    G.board[ecells[k][0]][ecells[k][1]] = mkUnit('e', lv);
-    left--;
-  }
-
-  // Босс
-  if(info.isBoss){
-    var br=1, bc=3;
-    for(var r2=br;r2<=br+1;r2++) for(var c2=bc;c2<=bc+1;c2++) G.board[r2][c2] = {side:'e', isBoss:true};
-    var hp = BOSS_HP[info.league];
-    var xy = {x:BX+(bc+1)*CS, y:BY+(br+1)*CS};
-    G.boss = {r:br, c:bc, hp:hp, maxHp:hp, vx:xy.x, vy:xy.y, type:info.biome.bossType, anim:0, fireFlash:0};
-  }
-
-  $('overlay').classList.remove('show');
-  updateHUD();
-}
-
-function mkUnit(side, level, opts){
-  opts = opts || {};
-  var hp = opts.hp || level;
-  return {
-    side: side, level: level||1, hp: hp, maxHp: hp,
-    shield: 0, isBoss: false, vx: 0, vy: 0, bob: Math.random()*TAU,
-    cardId: opts.cardId || 'pawn'
-  };
-}
-
-/* ================== КАРТЫ И РУКА ================== */
-function drawHand(){
-  var handDiv = $('hand');
-  handDiv.innerHTML = '';
-  // Берем 4 случайные карты (или первые 4 для простоты)
-  hand = [CARDS[0], CARDS[1], CARDS[2], CARDS[3]]; 
-  
-  hand.forEach(function(card, index){
-    var div = document.createElement('div');
-    div.className = 'card';
-    if(elixir < card.cost) div.classList.add('disabled');
-    div.innerHTML = '<div class="cost">'+card.cost+'</div>'+
-                    '<div class="icon">'+card.icon+'</div>'+
-                    '<div class="name">'+card.name+'</div>';
+function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     
-    // Drag and drop
-    div.addEventListener('pointerdown', function(e){
-      if(elixir < card.cost || G.turn !== 'player' || G.busy) return;
-      dragCard = card;
-      dragX = e.clientX; dragY = e.clientY;
-      div.style.opacity = '0.5';
-    });
-    
-    handDiv.appendChild(div);
-  });
+    // Адаптивная доска
+    const maxBoardSize = Math.min(W * 0.95, H * 0.55);
+    CS = Math.floor(maxBoardSize / CFG.gridSize);
+    BOARD = CS * CFG.gridSize;
+    BX = (W - BOARD) / 2;
+    BY = H * 0.15;
 }
-
-function updateElixirUI(){
-  var pct = (elixir / CFG.maxElixir) * 100;
-  $('elixir-fill').style.width = pct + '%';
-  $('elixir-text').textContent = elixir + ' / ' + CFG.maxElixir;
-  
-  // Обновляем доступность карт
-  var cards = document.querySelectorAll('.card');
-  cards.forEach(function(div, i){
-    if(elixir < hand[i].cost) div.classList.add('disabled');
-    else div.classList.remove('disabled');
-  });
-}
-
-/* ================== ВВОД ================== */
-cv.addEventListener('pointerdown', function(e){
-  if(!G || G.over || G.busy || G.turn !== 'player') return;
-  var c = Math.floor((e.clientX - BX) / CS), r = Math.floor((e.clientY - BY) / CS);
-  if(!inb(r,c)) return;
-  onCell(r,c);
-});
-
-cv.addEventListener('pointermove', function(e){
-  if(dragCard){
-    dragX = e.clientX; dragY = e.clientY;
-  }
-});
-
-cv.addEventListener('pointerup', function(e){
-  if(!dragCard) return;
-  
-  var c = Math.floor((e.clientX - BX) / CS), r = Math.floor((e.clientY - BY) / CS);
-  
-  if(inb(r,c) && r >= 5 && !G.board[r][c]){
-    // Валидная клетка для спавна (нижние 3 ряда)
-    var u = mkUnit('p', dragCard.hp, { cardId: dragCard.id });
-    var xy = cellXY(r,c); u.vx = xy.x; u.vy = xy.y;
-    G.board[r][c] = u;
-    
-    elixir -= dragCard.cost;
-    updateElixirUI();
-    drawHand();
-    burst(xy.x, xy.y, dragCard.color, 15, 150);
-    
-    // После спавна карты ход переходит врагу (опционально, но так баланснее)
-    endPlayerTurn();
-  } else {
-    // Возврат карты, если бросили не туда
-    drawHand();
-  }
-  
-  dragCard = null;
-  document.querySelectorAll('.card').forEach(function(d){ d.style.opacity = '1'; });
-});
-
-/* ================== ХОДЫ И БОЙ ================== */
-function getMoves(r,c){
-  var b=G.board, u=b[r][c];
-  if(!u||u.isBoss) return [];
-  var fwd = u.side==='p' ? -1 : 1;
-  var dirs = [[fwd,-1],[fwd,1]];
-  if(u.level>=3) dirs.push([-fwd,-1],[-fwd,1]); // летают
-  var out = [];
-  var maxStep = u.level>=3 ? 7 : 1;
-  for(var i=0;i<dirs.length;i++){
-    var dr=dirs[i][0], dc=dirs[i][1];
-    for(var s=1;s<=maxStep;s++){
-      var nr=r+dr*s, nc=c+dc*s;
-      if(!inb(nr,nc)) break;
-      var t=b[nr][nc];
-      if(!t){ out.push({r:nr,c:nc,cap:false}); continue; }
-      if(t.side===u.side) break;
-      if(t.isBoss) break;
-      var lr=r+dr*(s+1), lc=c+dc*(s+1);
-      if(inb(lr,lc) && !b[lr][lc]) out.push({r:lr,c:lc,cap:true,cr:nr,cc:nc});
-      break;
-    }
-  }
-  return out;
-}
-
-function onCell(r,c){
-  var u = G.board[r][c];
-  
-  // Выбор своей шашки
-  if(u && !u.isBoss && u.side==='p'){
-    G.sel = {r:r, c:c};
-    G.moves = getMoves(r,c);
-    updateHUD();
-    return;
-  }
-  
-  // Ход
-  var mv = null;
-  if(G.sel){
-    for(var i=0;i<G.moves.length;i++){
-      if(G.moves[i].r===r && G.moves[i].c===c){ mv = G.moves[i]; break; }
-    }
-  }
-  
-  if(!mv){ G.sel = null; G.moves = []; updateHUD(); return; }
-
-  var fr = G.sel.r, fc = G.sel.c;
-  G.sel = null; G.moves = []; G.busy = true;
-  
-  if(mv.cap){
-    var e = G.board[mv.cr][mv.cc];
-    if(e && !e.isBoss){ e.hp--; if(e.hp<=0) G.board[mv.cr][mv.cc] = null; }
-    burst(cellXY(mv.cr, mv.cc).x, cellXY(mv.cr, mv.cc).y, '#ffd166', 10, 140);
-  }
-  
-  var u2 = G.board[fr][fc];
-  G.board[fr][fc] = null; G.board[r][c] = u2;
-  
-  if(checkEnd()) return;
-  endPlayerTurn();
-}
-
-function endPlayerTurn(){
-  if(!G || G.over) return;
-  G.turn = 'enemy'; G.busy = true;
-  updateHUD();
-  
-  // Авто-стрельба по боссу
-  setTimeout(function(){
-    if(G.boss && G.boss.hp > 0) autoFire();
-    setTimeout(enemyTurn, 600);
-  }, 400);
-}
-
-function autoFire(){
-  var totalDmg = 0;
-  for(var r=0;r<N;r++) for(var c=0;c<N;c++){
-    var u = G.board[r][c];
-    if(!u || u.isBoss || u.side!=='p') continue;
-    
-    // Урон зависит от типа карты
-    var dmg = 1;
-    if(u.cardId === 'sniper') dmg = 3;
-    if(u.cardId === 'bomber') dmg = 2;
-    if(u.cardId === 'mage') dmg = 2;
-    if(u.level >= 3) dmg += 2;
-    
-    totalDmg += dmg;
-    
-    projectiles.push({
-      x: u.vx, y: u.vy, tx: G.boss.vx, ty: G.boss.vy,
-      t: 0, dur: 0.3, color: '#ffe066'
-    });
-  }
-  
-  if(totalDmg > 0){
-    G.boss.hp -= totalDmg;
-    floater(G.boss.vx, G.boss.vy - CS*0.6, '-'+totalDmg, '#ff6b6b');
-    if(G.boss.hp <= 0){
-      for(var r2=0;r2<N;r2++) for(var c2=0;c2<N;c2++) if(G.board[r2][c2] && G.board[r2][c2].isBoss) G.board[r2][c2] = null;
-      burst(G.boss.vx, G.boss.vy, '#ffe066', 40, 300);
-      floater(G.boss.vx, G.boss.vy - CS, 'БОСС ПАЛ!', '#ffd166');
-    }
-    checkEnd();
-  }
-}
-
-function enemyTurn(){
-  if(!G || G.over) return;
-  // Враги просто двигаются вниз или атакуют
-  var b = G.board, cands = [];
-  for(var r=0;r<N;r++) for(var c=0;c<N;c++){
-    var u = b[r][c]; if(!u || u.isBoss || u.side!=='e') continue;
-    var ms = getMoves(r,c);
-    for(var i=0;i<ms.length;i++) cands.push({r:r,c:c,m:ms[i]});
-  }
-  if(cands.length){
-    var pick = cands[Math.floor(Math.random()*cands.length)];
-    if(pick.m.cap){
-      var e = b[pick.m.cr][pick.m.cc];
-      if(e && !e.isBoss){ e.hp--; if(e.hp<=0) b[pick.m.cr][pick.m.cc] = null; }
-    }
-    var u2 = b[pick.r][pick.c];
-    b[pick.r][pick.c] = null; b[pick.m.r][pick.m.c] = u2;
-  }
-  
-  // Босс стреляет
-  if(G.boss && G.boss.hp > 0 && Math.random() > 0.3){
-    var targets = [];
-    for(var r2=0;r2<N;r2++) for(var c2=0;c2<N;c2++){
-      var u3 = b[r2][c2];
-      if(u3 && !u3.isBoss && u3.side==='p') targets.push([r2,c2]);
-    }
-    if(targets.length){
-      var t = targets[Math.floor(Math.random()*targets.length)];
-      var q = cellXY(t[0], t[1]);
-      G.boss.fireFlash = 0.3;
-      projectiles.push({ x:G.boss.vx, y:G.boss.vy, tx:q.x, ty:q.y, t:0, dur:0.5, target: t, color:'#ff3b3b' });
-    }
-  }
-
-  setTimeout(function(){
-    if(!G || G.over) return;
-    G.turn = 'player'; G.busy = false;
-    
-    // Регенерация эликсира
-    elixir = Math.min(CFG.maxElixir, elixir + CFG.regen);
-    updateElixirUI();
-    drawHand();
-    updateHUD();
-  }, 600);
-}
-
-/* ================== ЭФФЕКТЫ ================== */
-function burst(x,y,color,n,spd){
-  for(var i=0;i<n;i++){
-    var a = Math.random()*TAU, s = spd*(0.2+Math.random());
-    particles.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-50,life:0.5,max:0.5,color:color,r:2+Math.random()*3});
-  }
-}
-function floater(x,y,text,color){
-  floaters.push({x:x,y:y,text:text,color:color,t:0,dur:1});
-}
-function checkEnd(){
-  var pn=0, en=0;
-  for(var r=0;r<N;r++) for(var c=0;c<N;c++){
-    var u = G.board[r][c];
-    if(u && !u.isBoss){ if(u.side==='p') pn++; if(u.side==='e') en++; }
-  }
-  if(pn===0){ endGame(false); return true; }
-  if(en===0 && (!G.boss || G.boss.hp<=0)){ endGame(true); return true; }
-  return false;
-}
-
-/* ================== РИСОВАНИЕ ================== */
-function update(dt){
-  if(!G) return;
-  G.time += dt;
-  
-  for(var r=0;r<N;r++) for(var c=0;c<N;c++){
-    var u=G.board[r][c]; if(!u||u.isBoss) continue;
-    var q=cellXY(r,c), k=Math.min(1,dt*12);
-    u.vx += (q.x-u.vx)*k; u.vy += (q.y-u.vy)*k;
-  }
-  
-  if(G.boss){
-    G.boss.anim += dt;
-    G.boss.fireFlash = Math.max(0, G.boss.fireFlash - dt);
-  }
-
-  for(var i=particles.length-1;i>=0;i--){
-    var p=particles[i];
-    p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=100*dt; p.life-=dt;
-    if(p.life<=0) particles.splice(i,1);
-  }
-  
-  for(var j=projectiles.length-1;j>=0;j--){
-    var pr = projectiles[j];
-    pr.t += dt;
-    if(pr.t >= pr.dur){
-      if(pr.target){
-        var u2 = G.board[pr.target[0]][pr.target[1]];
-        if(u2 && u2.side==='p'){ u2.hp--; if(u2.hp<=0) G.board[pr.target[0]][pr.target[1]]=null; }
-        burst(pr.tx, pr.ty, '#ff3b3b', 8, 100);
-      }
-      projectiles.splice(j,1);
-    }
-  }
-  
-  for(var k=floaters.length-1;k>=0;k--){
-    var f=floaters[k];
-    f.t += dt; f.y -= dt*40;
-    if(f.t>=f.dur) floaters.splice(k,1);
-  }
-}
-
-function draw(){
-  var b = G.biome;
-  
-  // 1. Небо и Лес
-  var sky = ctx.createLinearGradient(0,0,0,H*0.5);
-  sky.addColorStop(0, b.sky1); sky.addColorStop(1, b.ground1);
-  ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
-  
-  // Деревья (густой лес)
-  for(var i=0;i<G.trees.length;i++){
-    var tr = G.trees[i];
-    ctx.fillStyle = tr.s > 0.8 ? '#0d3a12' : '#1a5a1f';
-    ctx.beginPath();
-    ctx.arc(tr.x, tr.y, 30*tr.s, 0, TAU);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(tr.x-15*tr.s, tr.y+10*tr.s, 20*tr.s, 0, TAU);
-    ctx.arc(tr.x+15*tr.s, tr.y+10*tr.s, 20*tr.s, 0, TAU);
-    ctx.fill();
-  }
-  
-  // Вода (слева и снизу)
-  var waterGrad = ctx.createLinearGradient(0, H*0.6, W, H);
-  waterGrad.addColorStop(0, b.water); waterGrad.addColorStop(1, '#000a1a');
-  ctx.fillStyle = waterGrad;
-  ctx.beginPath();
-  ctx.moveTo(0, H*0.5);
-  ctx.quadraticCurveTo(W*0.2, H*0.6, 0, H);
-  ctx.lineTo(0, H); ctx.lineTo(W, H); ctx.lineTo(W, H*0.8);
-  ctx.quadraticCurveTo(W*0.8, H*0.6, 0, H*0.5);
-  ctx.fill();
-  
-  // Берег (песок/камни)
-  ctx.fillStyle = '#c2a878';
-  ctx.beginPath();
-  ctx.moveTo(0, H*0.5);
-  ctx.quadraticCurveTo(W*0.2, H*0.6, 0, H);
-  ctx.lineTo(W*0.1, H);
-  ctx.quadraticCurveTo(W*0.3, H*0.65, 0, H*0.52);
-  ctx.fill();
-
-  // 2. Доска
-  // Деревянная рамка
-  ctx.fillStyle = '#4a2f1a';
-  roundRect(BX-12, BY-12, BOARD+24, BOARD+24, 12); ctx.fill();
-  ctx.fillStyle = '#6a4528';
-  roundRect(BX-8, BY-8, BOARD+16, BOARD+16, 8); ctx.fill();
-  
-  // Клетки
-  for(var r=0;r<N;r++) for(var c=0;c<N;c++){
-    var even = (r+c)%2 === 0;
-    var x = BX+c*CS, y = BY+r*CS;
-    if(even){
-      var g = ctx.createLinearGradient(x,y,x+CS,y+CS);
-      g.addColorStop(0, b.tileA); g.addColorStop(1, b.ground1);
-      ctx.fillStyle = g;
-    } else {
-      var g2 = ctx.createLinearGradient(x,y,x+CS,y+CS);
-      g2.addColorStop(0, b.tileB); g2.addColorStop(1, b.ground2);
-      ctx.fillStyle = g2;
-    }
-    ctx.fillRect(x, y, CS, CS);
-  }
-  
-  // Подсветка ходов
-  if(G.sel){
-    var sp = cellXY(G.sel.r, G.sel.c);
-    ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(sp.x, sp.y, CS*0.4, 0, TAU); ctx.stroke();
-    
-    for(var i=0;i<G.moves.length;i++){
-      var m = G.moves[i];
-      var q = cellXY(m.r, m.c);
-      if(m.cap){
-        ctx.strokeStyle = '#ff3b3b'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(q.x, q.y, CS*0.35, 0, TAU); ctx.stroke();
-      } else {
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.beginPath(); ctx.arc(q.x, q.y, CS*0.15, 0, TAU); ctx.fill();
-      }
-    }
-  }
-
-  // 3. Юниты
-  for(var r2=0;r2<N;r2++) for(var c2=0;c2<N;c2++){
-    var u = G.board[r2][c2];
-    if(!u || u.isBoss) continue;
-    drawUnit(u, u.vx, u.vy, CS*0.35);
-  }
-  
-  // Босс
-  if(G.boss && G.boss.hp > 0) drawBoss();
-  
-  // 4. Эффекты
-  for(var j=0;j<projectiles.length;j++){
-    var pr = projectiles[j];
-    var k = Math.min(1, pr.t/pr.dur);
-    var x = pr.x + (pr.tx - pr.x)*k;
-    var y = pr.y + (pr.ty - pr.y)*k;
-    ctx.fillStyle = pr.color;
-    ctx.beginPath(); ctx.arc(x, y, 5, 0, TAU); ctx.fill();
-  }
-  
-  for(var k2=0;k2<particles.length;k2++){
-    var p = particles[k2];
-    ctx.globalAlpha = p.life / p.max;
-    ctx.fillStyle = p.color;
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  
-  for(var f=0;f<floaters.length;f++){
-    var fl = floaters[f];
-    ctx.globalAlpha = 1 - fl.t/fl.dur;
-    ctx.fillStyle = fl.color; ctx.font = 'bold 22px Trebuchet MS'; ctx.textAlign = 'center';
-    ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
-    ctx.strokeText(fl.text, fl.x, fl.y); ctx.fillText(fl.text, fl.x, fl.y);
-  }
-  ctx.globalAlpha = 1;
-  
-  // Отрисовка перетаскиваемой карты
-  if(dragCard){
-    var cardColor = dragCard.color;
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.beginPath(); ctx.arc(dragX, dragY, CS*0.4, 0, TAU); ctx.fill();
-    ctx.fillStyle = cardColor;
-    ctx.beginPath(); ctx.arc(dragX, dragY, CS*0.35, 0, TAU); ctx.fill();
-    ctx.font = '24px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(dragCard.icon, dragX, dragY);
-  }
-}
-
-function roundRect(x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
-}
-
-function drawUnit(u, x, y, rad){
-  var isFly = u.level >= 3;
-  var hover = isFly ? Math.sin(G.time*4+u.bob)*4-8 : 0;
-  y += hover;
-  
-  // Тень
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  ctx.beginPath(); ctx.ellipse(x, y+rad*0.8-hover, rad*0.9, rad*0.3, 0, 0, TAU); ctx.fill();
-  
-  // Башня из шашек (уровни)
-  var layers = Math.min(u.level, 4);
-  for(var i=0; i<layers; i++){
-    var r = rad * (1 - i*0.1);
-    var oy = -i * rad * 0.4;
-    
-    // Тело шашки
-    var g = ctx.createRadialGradient(x-r*0.3, y+oy-r*0.3, r*0.1, x, y+oy, r);
-    if(u.side === 'p'){
-      g.addColorStop(0, '#fff'); g.addColorStop(0.5, '#ffd166'); g.addColorStop(1, '#a86f00');
-    } else {
-      g.addColorStop(0, '#f0d5ff'); g.addColorStop(0.5, '#a855f7'); g.addColorStop(1, '#3a1065');
-    }
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y+oy, r, 0, TAU); ctx.fill();
-    
-    // Ободок
-    ctx.strokeStyle = u.side==='p'?'#ffea00':'#d8b4fe'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(x, y+oy, r*0.95, 0, TAU); ctx.stroke();
-  }
-  
-  // Иконка карты (если есть)
-  if(u.cardId && u.cardId !== 'pawn'){
-    var cardInfo = CARDS.find(function(c){return c.id === u.cardId;});
-    if(cardInfo){
-      ctx.font = Math.floor(rad*1.2) + 'px Arial';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(cardInfo.icon, x, y - layers*rad*0.4 - 10);
-    }
-  }
-}
-
-function drawBoss(){
-  var B = G.boss, x = B.vx, y = B.vy, R = CS*0.95;
-  
-  // Аура босса
-  var g0 = ctx.createRadialGradient(x, y, R*0.5, x, y, R*1.8);
-  g0.addColorStop(0, 'rgba(255,50,50,0.3)'); g0.addColorStop(1, 'rgba(255,50,50,0)');
-  ctx.fillStyle = g0; ctx.beginPath(); ctx.arc(x, y, R*1.8, 0, TAU); ctx.fill();
-  
-  // Тело
-  var g = ctx.createRadialGradient(x-R*0.3, y-R*0.3, R*0.2, x, y, R);
-  g.addColorStop(0, '#ff8a3a'); g.addColorStop(0.5, '#c81a00'); g.addColorStop(1, '#3a0000');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fill();
-  ctx.strokeStyle = '#ffb060'; ctx.lineWidth = 3; ctx.stroke();
-  
-  // Корона
-  ctx.fillStyle = '#ffd166';
-  ctx.beginPath();
-  ctx.moveTo(x-R*0.5, y-R*0.8); ctx.lineTo(x-R*0.5, y-R*1.2); ctx.lineTo(x-R*0.2, y-R*0.9);
-  ctx.lineTo(x, y-R*1.3); ctx.lineTo(x+R*0.2, y-R*0.9); ctx.lineTo(x+R*0.5, y-R*1.2);
-  ctx.lineTo(x+R*0.5, y-R*0.8); ctx.closePath(); ctx.fill();
-  
-  // Глаза
-  ctx.fillStyle = '#ffe066';
-  ctx.beginPath(); ctx.arc(x-R*0.3, y-R*0.1, R*0.15, 0, TAU); ctx.fill();
-  ctx.beginPath(); ctx.arc(x+R*0.3, y-R*0.1, R*0.15, 0, TAU); ctx.fill();
-  ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.arc(x-R*0.3, y-R*0.1, R*0.06, 0, TAU); ctx.fill();
-  ctx.beginPath(); ctx.arc(x+R*0.3, y-R*0.1, R*0.06, 0, TAU); ctx.fill();
-  
-  // HP Bar
-  var w = R*2, h = 8;
-  ctx.fillStyle = '#000a'; roundRect(x-w/2, y-R-30, w, h, 4); ctx.fill();
-  ctx.fillStyle = '#ff3b3b'; roundRect(x-w/2, y-R-30, w*(B.hp/B.maxHp), h, 4); ctx.fill();
-}
-
-function updateHUD(){
-  if(!G) return;
-  $('hTitle').textContent = G.biome.name;
-  $('hSub').textContent = 'Лига ' + (G.info.league+1) + ' · Уровень ' + G.lvl + '/25';
-  $('hTurn').textContent = G.over ? '' : (G.turn === 'player' ? 'ВАШ ХОД' : 'ХОД ВРАГА');
-  
-  if(G.boss && G.boss.hp > 0){
-    $('hBoss').textContent = '☠ ' + G.biome.bossName;
-    $('hBossBar').style.display = 'block';
-    $('hBossBar').firstElementChild.style.width = (100*G.boss.hp/G.boss.maxHp) + '%';
-  } else {
-    $('hBoss').textContent = '';
-    $('hBossBar').style.display = 'none';
-  }
-}
-
-/* ================== МЕНЮ ================== */
-function showMenu(){
-  G = null;
-  var saved = 1;
-  try { saved = +(localStorage.getItem('shashki_clash')||1) || 1; } catch(e){}
-  
-  var ov = $('overlay');
-  ov.innerHTML = 
-    '<h1>Шашки: Card Clash</h1>'+
-    '<p>Перетаскивай карты на свою половину поля!<br>Карты дают уникальные способности шашкам.<br>Сливай одинаковые шашки в башни. Стреляй по боссу!</p>'+
-    '<div class="row"><button id="mPlay">Играть (Ур. ' + saved + ')</button></div>';
-  ov.classList.add('show');
-  
-  $('mPlay').onclick = function(){ ov.classList.remove('show'); startLevel(saved); };
-}
-
-function endGame(win){
-  if(!G || G.over) return;
-  G.over = true;
-  var lvl = G.lvl;
-  var ov = $('overlay');
-  
-  if(win){
-    var next = Math.min(25, lvl+1);
-    try { localStorage.setItem('shashki_clash', next); } catch(e){}
-    ov.innerHTML = '<h1>Победа!</h1><p>Уровень '+lvl+' пройден.</p><div class="row"><button id="ovNext">Дальше</button></div>';
-    ov.classList.add('show');
-    $('ovNext').onclick = function(){ ov.classList.remove('show'); startLevel(next); };
-  } else {
-    ov.innerHTML = '<h1>Поражение</h1><p>Босс оказался сильнее.</p><div class="row"><button id="ovRetry">Заново</button></div>';
-    ov.classList.add('show');
-    $('ovRetry').onclick = function(){ ov.classList.remove('show'); startLevel(lvl); };
-  }
-}
-
-/* ================== СТАРТ ================== */
+window.addEventListener('resize', resize);
 resize();
-showMenu();
 
-var last = 0;
-function loop(ts){
-  var dt = Math.min(0.05, (ts-last)/1000 || 0.016);
-  last = ts;
-  
-  if(G){
-    update(dt);
-    draw();
-  } else {
-    ctx.fillStyle = '#1a2a4a';
-    ctx.fillRect(0,0,W,H);
-  }
-  requestAnimationFrame(loop);
+const lerp = (a, b, t) => a + (b - a) * t;
+const rand = (min, max) => Math.random() * (max - min) + min;
+const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
+const cellToXY = (r, c) => ({ x: BX + c * CS + CS / 2, y: BY + r * CS + CS / 2 });
+const xyToCell = (x, y) => ({ r: Math.floor((y - BY) / CS), c: Math.floor((x - BX) / CS) });
+
+// ==========================================
+// 3. СИСТЕМА ЧАСТИЦ И ЭФФЕКТОВ (VFX)
+// ==========================================
+class Particle {
+    constructor(x, y, color, speed, life, size) {
+        this.x = x; this.y = y;
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = rand(speed * 0.5, speed);
+        this.vx = Math.cos(angle) * velocity;
+        this.vy = Math.sin(angle) * velocity;
+        this.color = color;
+        this.life = life; this.maxLife = life;
+        this.size = rand(size * 0.5, size);
+    }
+    update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.vy += 300 * dt; // гравитация
+        this.life -= dt;
+    }
+    draw(ctx) {
+        ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
 }
-requestAnimationFrame(loop);
+
+class Projectile {
+    constructor(x, y, tx, ty, color, target) {
+        this.x = x; this.y = y; this.tx = tx; this.ty = ty;
+        this.color = color; this.target = target;
+        this.t = 0; this.dur = dist(x, y, tx, ty) / 800;
+    }
+    update(dt) {
+        this.t += dt;
+        return this.t >= this.dur;
+    }
+    draw(ctx) {
+        const k = Math.min(1, this.t / this.dur);
+        const cx = lerp(this.x, this.tx, k);
+        const cy = lerp(this.y, this.ty, k);
+        
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, CS * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.shadowBlur = 10; ctx.shadowColor = this.color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, CS * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+}
+
+class FloatingText {
+    constructor(x, y, text, color) {
+        this.x = x; this.y = y; this.text = text; this.color = color;
+        this.t = 0; this.dur = 1.0;
+    }
+    update(dt) { this.t += dt; this.y -= 50 * dt; return this.t >= this.dur; }
+    draw(ctx) {
+        ctx.globalAlpha = Math.max(0, 1 - this.t / this.dur);
+        ctx.fillStyle = this.color;
+        ctx.font = 'bold 20px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+        ctx.strokeText(this.text, this.x, this.y);
+        ctx.fillText(this.text, this.x, this.y);
+        ctx.globalAlpha = 1;
+    }
+}
+
+// ==========================================
+// 4. ИГРОВЫЕ СУЩНОСТИ
+// ==========================================
+class Checker {
+    constructor(r, c, side, cardType, level = 1) {
+        this.r = r; this.c = c;
+        this.side = side; // 'player' | 'enemy'
+        this.cardType = cardType;
+        this.level = level;
+        this.maxHp = CARDS[cardType].hp + (level - 1) * 2;
+        this.hp = this.maxHp;
+        this.isBoss = false;
+        this.moveCooldown = 0;
+        
+        const target = cellToXY(r, c);
+        this.x = target.x; this.y = target.y;
+        this.bobOffset = Math.random() * Math.PI * 2;
+    }
+    update(dt) {
+        this.moveCooldown = Math.max(0, this.moveCooldown - dt);
+        const target = cellToXY(this.r, this.c);
+        this.x = lerp(this.x, target.x, dt * 10);
+        this.y = lerp(this.y, target.y, dt * 10);
+    }
+    draw(ctx, time) {
+        const isFlying = this.level >= 3;
+        const bob = isFlying ? Math.sin(time * 5 + this.bobOffset) * 5 - 10 : 0;
+        
+        // Тень
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.beginPath();
+        ctx.ellipse(this.x, this.y + CS * 0.3, CS * 0.4, CS * 0.15, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Сама шашка (многослойная для уровней)
+        for (let i = 0; i < Math.min(this.level, 4); i++) {
+            const yOffset = -i * CS * 0.15 + bob;
+            const radius = CS * 0.35 * (1 - i * 0.08);
+            
+            // 3D Градиент
+            const grad = ctx.createRadialGradient(
+                this.x - radius * 0.3, this.y + yOffset - radius * 0.3, radius * 0.1,
+                this.x, this.y + yOffset, radius
+            );
+            
+            if (this.side === 'player') {
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, CARDS[this.cardType].color);
+                grad.addColorStop(1, '#1e293b');
+            } else {
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, '#ef4444');
+                grad.addColorStop(1, '#450a0a');
+            }
+            
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y + yOffset, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Обводка
+            ctx.strokeStyle = this.side === 'player' ? '#38bdf8' : '#f87171';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Блик
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(this.x - radius*0.3, this.y + yOffset - radius*0.3, radius*0.2, 0, Math.PI*2);
+            ctx.fill();
+        }
+        
+        // Иконка карты
+        if (this.cardType) {
+            ctx.font = `${Math.floor(CS*0.4)}px Arial`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(CARDS[this.cardType].icon, this.x, this.y + bob - CS*0.1);
+        }
+        
+        // Полоска HP
+        if (this.hp < this.maxHp) {
+            const w = CS * 0.8;
+            ctx.fillStyle = '#000';
+            ctx.fillRect(this.x - w/2, this.y - CS*0.5 + bob, w, 5);
+            ctx.fillStyle = '#10b981';
+            ctx.fillRect(this.x - w/2, this.y - CS*0.5 + bob, w * (this.hp / this.maxHp), 5);
+        }
+    }
+}
+
+class BossTower {
+    constructor(r, c, side) {
+        this.r = r; this.c = c; this.side = side;
+        this.maxHp = 30; this.hp = 30;
+        const target = cellToXY(r, c);
+        this.x = target.x; this.y = target.y - CS*0.5;
+        this.fireCd = 0;
+    }
+    update(dt) {
+        this.fireCd = Math.max(0, this.fireCd - dt);
+    }
+    draw(ctx, time) {
+        // Огромная башня
+        const size = CS * 1.2;
+        const grad = ctx.createLinearGradient(this.x, this.y - size, this.x, this.y + size/2);
+        grad.addColorStop(0, this.side === 'player' ? '#60a5fa' : '#f87171');
+        grad.addColorStop(1, '#0f172a');
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(this.x - size/2, this.y + size/2);
+        ctx.lineTo(this.x - size/3, this.y - size/2);
+        ctx.lineTo(this.x + size/3, this.y - size/2);
+        ctx.lineTo(this.x + size/2, this.y + size/2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        
+        // Корона
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = `${Math.floor(CS*0.8)}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.fillText('👑', this.x, this.y - size/2);
+        
+        // HP Bar
+        const w = CS * 1.5;
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.fillRect(this.x - w/2, this.y - size/1.5 - 20, w, 10);
+        ctx.fillStyle = this.hp > 10 ? '#10b981' : '#ef4444';
+        ctx.fillRect(this.x - w/2, this.y - size/1.5 - 20, w * (this.hp / this.maxHp), 10);
+    }
+}
+
+// ==========================================
+// 5. ИГРОВАЯ ЛОГИКА
+// ==========================================
+const Game = {
+    mode: 'friendly',
+    rating: 1200,
+    isRunning: false,
+    time: 0,
+    elixir: 5,
+    enemyElixir: 5,
+    board: [],
+    playerHand: [],
+    enemyHand: [],
+    projectiles: [],
+    particles: [],
+    floaters: [],
+    
+    init(mode) {
+        this.mode = mode;
+        this.isRunning = true;
+        this.time = 0;
+        this.elixir = 5;
+        this.enemyElixir = 5;
+        this.board = Array(8).fill(null).map(() => Array(8).fill(null));
+        this.projectiles = []; this.particles = []; this.floaters = [];
+        
+        // Базы
+        this.playerBase = new BossTower(7, 3, 'player');
+        this.enemyBase = new BossTower(0, 3, 'enemy');
+        this.board[7][3] = this.playerBase;
+        this.board[0][3] = this.enemyBase;
+        
+        // Стартовые враги (шашки)
+        for (let c = 0; c < 8; c += 2) {
+            this.spawnChecker(2, c, 'enemy', 'knight', 1);
+        }
+        
+        // Карты в руку
+        this.playerHand = ['knight', 'sniper', 'bomber', 'mage'];
+        this.enemyHand = ['knight', 'knight', 'mage', 'bomber'];
+        
+        this.renderHand();
+        document.getElementById('menu').classList.add('hidden');
+        document.getElementById('rankText').innerText = this.rating;
+        document.getElementById('enemyName').innerText = mode === 'ranked' ? 'Grandmaster AI' : 'Friendly Bot';
+    },
+    
+    spawnChecker(r, c, side, type, level) {
+        if (this.board[r][c]) return false;
+        this.board[r][c] = new Checker(r, c, side, type, level);
+        return true;
+    },
+    
+    renderHand() {
+        const container = document.getElementById('handContainer');
+        container.innerHTML = '';
+        this.playerHand.forEach((cardId, index) => {
+            const card = CARDS[cardId];
+            const div = document.createElement('div');
+            div.className = 'card';
+            if (this.elixir < card.cost) div.classList.add('disabled');
+            div.innerHTML = `
+                <div class="cost">${card.cost}</div>
+                <div class="icon">${card.icon}</div>
+                <div class="name">${CFG.cardNames[cardId]}</div>
+            `;
+            
+            // Drag & Drop
+            div.addEventListener('pointerdown', (e) => {
+                if (this.elixir < card.cost || !this.isRunning) return;
+                div.style.opacity = '0.3';
+                document.getElementById('drag-proxy').innerText = card.icon;
+                
+                const moveProxy = (ev) => {
+                    const proxy = document.getElementById('drag-proxy');
+                    proxy.style.display = 'flex';
+                    proxy.style.left = ev.clientX + 'px';
+                    proxy.style.top = ev.clientY + 'px';
+                };
+                
+                const upProxy = (ev) => {
+                    document.removeEventListener('pointermove', moveProxy);
+                    document.removeEventListener('pointerup', upProxy);
+                    document.getElementById('drag-proxy').style.display = 'none';
+                    div.style.opacity = '1';
+                    
+                    const cell = xyToCell(ev.clientX, ev.clientY);
+                    if (cell.r >= 4 && cell.r < 8 && cell.c >= 0 && cell.c < 8) {
+                        if (this.spawnChecker(cell.r, cell.c, 'player', cardId, 1)) {
+                            this.elixir -= card.cost;
+                            this.updateElixirUI();
+                            this.renderHand();
+                            this.createExplosion(cellToXY(cell.r, cell.c).x, cellToXY(cell.r, cell.c).y, card.color);
+                        }
+                    }
+                };
+                
+                document.addEventListener('pointermove', moveProxy);
+                document.addEventListener('pointerup', upProxy);
+            });
+            
+            container.appendChild(div);
+        });
+    },
+    
+    updateElixirUI() {
+        const pct = (this.elixir / CFG.maxElixir) * 100;
+        document.getElementById('elixirFill').style.width = pct + '%';
+        document.getElementById('elixirText').innerText = Math.floor(this.elixir) + ' / ' + CFG.maxElixir;
+    },
+    
+    createExplosion(x, y, color) {
+        for (let i = 0; i < 20; i++) {
+            this.particles.push(new Particle(x, y, color, 200, 0.8, 4));
+        }
+    },
+    
+    // Логика шашек: поиск доступных ходов по диагонали
+    getValidMoves(r, c) {
+        const piece = this.board[r][c];
+        if (!piece || piece.side !== 'player' || piece.isBoss) return [];
+        
+        let moves = [];
+        const dirs = [[-1, -1], [-1, 1], [1, -1], [1, 1]]; // 4 диагонали
+        const maxStep = piece.level >= 3 ? 7 : 1; // Дамки летают
+        
+        for (let [dr, dc] of dirs) {
+            for (let step = 1; step <= maxStep; step++) {
+                const nr = r + dr * step;
+                const nc = c + dc * step;
+                
+                if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) break;
+                const target = this.board[nr][nc];
+                
+                if (!target) {
+                    moves.push({ r: nr, c: nc, isCapture: false });
+                } else {
+                    // Атака (срубить)
+                    if (target.side !== piece.side && !target.isBoss) {
+                        const jr = nr + dr;
+                        const jc = nc + dc;
+                        if (jr >= 0 && jr < 8 && jc >= 0 && jc < 8 && !this.board[jr][jc]) {
+                            moves.push({ r: jr, c: jc, isCapture: true, tr: nr, tc: nc });
+                        }
+                    }
+                    break; // Блокируется
+                }
+            }
+        }
+        return moves;
+    },
+    
+    // ИИ Ход
+    enemyTurn() {
+        if (!this.isRunning) return;
+        
+        // 1. ИИ пытается походить шашками
+        const enemyPieces = [];
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                if (this.board[r][c] && this.board[r][c].side === 'enemy' && !this.board[r][c].isBoss) {
+                    enemyPieces.push({ r, c, piece: this.board[r][c] });
+                }
+            }
+        }
+        
+        if (enemyPieces.length > 0) {
+            // Берем случайную шашку и двигаем вниз
+            const { r, c, piece } = enemyPieces[Math.floor(Math.random() * enemyPieces.length)];
+            const dirs = [[1, -1], [1, 1]];
+            const [dr, dc] = dirs[Math.floor(Math.random() * 2)];
+            const nr = r + dr;
+            const nc = c + dc;
+            
+            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !this.board[nr][nc]) {
+                this.board[nr][nc] = piece;
+                this.board[r][c] = null;
+                piece.r = nr; piece.c = nc;
+            }
+        }
+        
+        // 2. ИИ спавнит новую карту (если хватает эликсира)
+        if (this.enemyElixir >= 4) {
+            const freeCells = [];
+            for (let c = 0; c < 8; c++) if (!this.board[1][c]) freeCells.push(c);
+            if (freeCells.length > 0) {
+                const c = freeCells[Math.floor(Math.random() * freeCells.length)];
+                this.spawnChecker(1, c, 'enemy', 'knight', this.mode === 'ranked' ? 2 : 1);
+                this.enemyElixir -= 4;
+            }
+        }
+        
+        // 3. Атака базы (если шашка дошла)
+        const r = 7;
+        for (let c = 0; c < 8; c++) {
+            if (this.board[r][c] && this.board[r][c].side === 'enemy' && !this.board[r][c].isBoss) {
+                this.playerBase.hp -= 2;
+                this.board[r][c] = null; // Шашка "врезается" и исчезает
+                this.createExplosion(this.playerBase.x, this.playerBase.y, '#ef4444');
+                this.checkGameOver();
+            }
+        }
+    },
+    
+    checkGameOver() {
+        if (this.playerBase.hp <= 0) this.endGame(false);
+        if (this.enemyBase.hp <= 0) this.endGame(true);
+    },
+    
+    endGame(win) {
+        this.isRunning = false;
+        setTimeout(() => {
+            if (this.mode === 'ranked') {
+                this.rating += win ? 30 : -20;
+            }
+            document.getElementById('menu').classList.remove('hidden');
+            document.getElementById('menu').querySelector('h1').innerText = win ? 'VICTORY!' : 'DEFEAT!';
+        }, 2000);
+    },
+
+    update(dt) {
+        if (!this.isRunning) return;
+        this.time += dt;
+        
+        // Восстановление эликсира
+        this.elixir = Math.min(CFG.maxElixir, this.elixir + dt / CFG.elixirRegenTime);
+        this.enemyElixir = Math.min(CFG.maxElixir, this.enemyElixir + dt / CFG.elixirRegenTime);
+        this.updateElixirUI();
+        
+        // Обновление UI карт (каждый кадр, чтобы проверять доступность)
+        const cards = document.querySelectorAll('.card');
+        if (cards.length) {
+            this.playerHand.forEach((cardId, i) => {
+                if (this.elixir < CARDS[cardId].cost) cards[i].classList.add('disabled');
+                else cards[i].classList.remove('disabled');
+            });
+        }
+        
+        // Обновление сущностей
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                if (this.board[r][c]) this.board[r][c].update(dt);
+            }
+        }
+        this.playerBase.update(dt);
+        this.enemyBase.update(dt);
+        
+        // Стрельба башен по врагам
+        if (this.playerBase.fireCd <= 0) {
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (this.board[r][c] && this.board[r][c].side === 'enemy') {
+                        this.projectiles.push(new Projectile(this.playerBase.x, this.playerBase.y - CS, this.board[r][c].x, this.board[r][c].y, '#38bdf8', this.board[r][c]));
+                        this.playerBase.fireCd = 2.0; // стреляет раз в 2 секунды
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Обновление снарядов
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            if (this.projectiles[i].update(dt)) {
+                if (this.projectiles[i].target) {
+                    this.projectiles[i].target.hp -= 1;
+                    this.createExplosion(this.projectiles[i].tx, this.projectiles[i].ty, this.projectiles[i].color);
+                    if (this.projectiles[i].target.hp <= 0) {
+                        const t = this.projectiles[i].target;
+                        this.board[t.r][t.c] = null;
+                    }
+                }
+                this.projectiles.splice(i, 1);
+            }
+        }
+        
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            this.particles[i].update(dt);
+            if (this.particles[i].life <= 0) this.particles.splice(i, 1);
+        }
+        
+        // ИИ ходит раз в 2 секунды
+        if (Math.floor(this.time * 10) % 20 === 0 && !this.aiCooldown) {
+            this.aiCooldown = true;
+            this.enemyTurn();
+            setTimeout(() => this.aiCooldown = false, 1000);
+        }
+    },
+    
+    draw() {
+        // Фон
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0, BIOME.sky1); sky.addColorStop(1, BIOME.sky2);
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+        
+        // Доска (Неоморфная, 3D)
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.beginPath();
+        ctx.roundRect(BX - 15, BY - 15, BOARD + 30, BOARD + 30, 20);
+        ctx.fill();
+        
+        // Клетки
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const isDark = (r + c) % 2 === 1;
+                const x = BX + c * CS;
+                const y = BY + r * CS;
+                
+                if (isDark) {
+                    const grad = ctx.createLinearGradient(x, y, x + CS, y + CS);
+                    grad.addColorStop(0, BIOME.tileA); grad.addColorStop(1, BIOME.tileB);
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(x, y, CS, CS);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.strokeRect(x, y, CS, CS);
+                } else {
+                    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                    ctx.fillRect(x, y, CS, CS);
+                }
+            }
+        }
+        
+        // Подсветка зоны спавна (нижние 4 ряда)
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.05)';
+        ctx.fillRect(BX, BY + 4*CS, BOARD, 4*CS);
+        
+        // Рамка
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.roundRect(BX - 15, BY - 15, BOARD + 30, BOARD + 30, 20);
+        ctx.stroke();
+
+        // Сущности
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                if (this.board[r][c]) this.board[r][c].draw(ctx, this.time);
+            }
+        }
+        
+        this.playerBase.draw(ctx, this.time);
+        this.enemyBase.draw(ctx, this.time);
+        
+        // Снаряды
+        this.projectiles.forEach(p => p.draw(ctx));
+        
+        // Частицы
+        this.particles.forEach(p => p.draw(ctx));
+    }
+};
+
+// ==========================================
+// 6. MAIN LOOP И ЗАПУСК
+// ==========================================
+let lastTime = 0;
+function gameLoop(timestamp) {
+    const dt = Math.min(0.1, (timestamp - lastTime) / 1000);
+    lastTime = timestamp;
+    
+    if (Game.isRunning) {
+        Game.update(dt);
+    }
+    
+    ctx.clearRect(0, 0, W, H);
+    Game.draw();
+    
+    requestAnimationFrame(gameLoop);
+}
+
+function startGame(mode) {
+    Game.init(mode);
+}
+
+// Запуск
+Game.board = Array(8).fill(null).map(() => Array(8).fill(null));
+Game.playerBase = new BossTower(7, 3, 'player');
+Game.enemyBase = new BossTower(0, 3, 'enemy');
+requestAnimationFrame(gameLoop);
 </script>
 </body>
 </html>
